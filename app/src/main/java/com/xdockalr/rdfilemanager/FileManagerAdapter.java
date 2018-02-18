@@ -1,6 +1,7 @@
 package com.xdockalr.rdfilemanager;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,9 +10,12 @@ import android.widget.TextView;
 import android.view.View.OnClickListener;
 import android.widget.Toast;
 
+import java.io.File;
+
 public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.FileManagerAdapterViewHolder> {
 
-    private String mFileManagerListData[];
+    //private String mFileManagerListData[];
+    private File mFileManagerListData[];
     private final FileManagerdapterOnClickHandler mClickHandler;
 
     public FileManagerAdapter(FileManagerdapterOnClickHandler clickHandler) {
@@ -27,7 +31,15 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
     @Override
     public FileManagerAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         Context context = parent.getContext();
-        int layoutIdForListItem = R.layout.filemanager_list_item;
+
+        int layoutIdForListItem;
+        if (parent.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+
+            layoutIdForListItem = R.layout.filemanager_list_item;
+        }
+        else {
+            layoutIdForListItem = R.layout.filemanager_grid_item;
+        }
         LayoutInflater inflater = LayoutInflater.from(context);
         boolean shouldAttachToParentImmediately = false;
 
@@ -37,7 +49,7 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
 
     @Override
     public void onBindViewHolder(FileManagerAdapterViewHolder holder, int position) {
-        String itemName = mFileManagerListData[position];
+        String itemName = mFileManagerListData[position].getName();
         holder.mFileManagerTextView.setText(itemName);
     }
 
@@ -47,7 +59,7 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
             return mFileManagerListData.length;
     }
 
-    public void setWeatherData(String[] fileManagerListdata) {
+    public void setFileManagerData(File[] fileManagerListdata) {
         mFileManagerListData = fileManagerListdata;
         notifyDataSetChanged();
     }
@@ -65,11 +77,8 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
         @Override
         public void onClick(View v) {
             int position = getAdapterPosition();
-            // TODO Akce po kliknutí na item v recycleview.
-            String itemPosition = "Item: " + mFileManagerListData[position];
-            Toast.makeText(v.getContext(), itemPosition, Toast.LENGTH_SHORT).show();
-
-            mClickHandler.onClick(itemPosition);
+            String actualItemPath = mFileManagerListData[position].toString();
+            mClickHandler.onClick(actualItemPath);
         }
     }
 }
