@@ -14,6 +14,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -21,16 +23,19 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.ArrayList;
 import java.util.Arrays;
 
-public class MainActivity extends AppCompatActivity implements FileManagerAdapter.FileManagerdapterOnClickHandler, LoaderManager.LoaderCallbacks<File[]>{
+public class MainActivity extends AppCompatActivity implements FileManagerAdapter.FileManagerAdapterOnClickHandler, LoaderManager.LoaderCallbacks<ArrayList<File>>{
 
     private RecyclerView mRecycleView;
     private FileManagerAdapter mFileManagerAdapter;
     private TextView mErrorText;
     private ProgressBar mProgressBar;
+    private String mActualPath;
 
     private static final int FILEMANAGER_LOADER_ID = 0;
+    private static final String FILEMANAGER_LOADER_PATH = "LOADER_PATH";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,14 +58,27 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
         mRecycleView.setHasFixedSize(true);
         mFileManagerAdapter = new FileManagerAdapter(this);
         mRecycleView.setAdapter(mFileManagerAdapter);
+        mActualPath = Environment.getExternalStorageDirectory().toString();
+        loadPath(mActualPath);
+    }
 
-        String path = Environment.getExternalStorageDirectory().toString();
-        int loaderId = FILEMANAGER_LOADER_ID;
-        LoaderManager.LoaderCallbacks<File[]> callback = MainActivity.this;
-        Bundle bundleForLoader = new Bundle();
-        bundleForLoader.putString("path", path);
-        mFileManagerAdapter.setFileManagerData(null);
-        getSupportLoaderManager().initLoader(loaderId, bundleForLoader, callback);
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int itemId = item.getItemId();
+
+        if (itemId == R.id.action_refresh) {
+            loadPath(mActualPath);
+        }
+        else if (itemId == R.id.action_settings){
+
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -79,11 +97,12 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
 
     private void loadPath(String path) {
         int loaderId = FILEMANAGER_LOADER_ID;
-        LoaderManager.LoaderCallbacks<File[]> callback = MainActivity.this;
+        LoaderManager.LoaderCallbacks<ArrayList<File>> callback = MainActivity.this;
         Bundle bundleForLoader = new Bundle();
-        bundleForLoader.putString("path", path);
+        bundleForLoader.putString(FILEMANAGER_LOADER_PATH, path);
         mFileManagerAdapter.setFileManagerData(null);
         getSupportLoaderManager().restartLoader(loaderId,bundleForLoader, this);
+        mActualPath = path;
     }
 
     private void showWeatherDataView() {
@@ -97,11 +116,10 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
     }
 
     @Override
-    public Loader<File[]> onCreateLoader(int id, final Bundle args) {
-        return new AsyncTaskLoader<File[]>(this) {
-
-            File[] mFileManagerData = null;
-            String actualPath = args.getString("path");
+    public Loader<ArrayList<File>> onCreateLoader(int id, final Bundle args) {
+        return new AsyncTaskLoader<ArrayList<File>>(this) {
+            ArrayList<File> mFileManagerData = null;
+            String actualPath = args.getString(FILEMANAGER_LOADER_PATH);
 
             @Override
             protected void onStartLoading() {
@@ -114,10 +132,10 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
             }
 
             @Override
-            public File[] loadInBackground() {
-
+            public ArrayList<File> loadInBackground() {
                 File mDirectory;
                 File[] mFiles = null;
+                ArrayList<File> inFiles = new ArrayList<>();
                 try {
                     if (new File(actualPath).isDirectory()) {
                         mDirectory = new File(String.valueOf(actualPath));
@@ -132,17 +150,19 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
                         if (mFiles != null) {
                             Arrays.sort(mFiles);
                         }
+                        for (File file : mFiles) {
+                            inFiles.add(file);
+                        }
+                        return inFiles;
                     }
-
-                    return mFiles;
-
                 } catch (Exception e) {
                     e.printStackTrace();
                     return null;
                 }
+                return inFiles;
             }
 
-            public void deliverResult(File[] data) {
+            public void deliverResult(ArrayList<File> data) {
                 mFileManagerData = data;
                 super.deliverResult(data);
             }
@@ -150,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
     }
 
     @Override
-    public void onLoadFinished(Loader<File[]> loader, File[] data) {
+    public void onLoadFinished(Loader<ArrayList<File>> loader, ArrayList<File> data) {
         mProgressBar.setVisibility(View.INVISIBLE);
         if (data != null) {
             showWeatherDataView();
@@ -162,7 +182,7 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
     }
 
     @Override
-    public void onLoaderReset(Loader<File[]> loader) {
+    public void onLoaderReset(Loader<ArrayList<File>> loader) {
 
     }
 
@@ -171,4 +191,10 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
         Toast.makeText(this, actualItemPath, Toast.LENGTH_SHORT).show();
         loadPath(actualItemPath);
     }
+
+    @Override
+    public void onLongClick(String itemName) {
+        Toast.makeText(this, "LongClick", Toast.LENGTH_SHORT).show();
+    }
+
 }

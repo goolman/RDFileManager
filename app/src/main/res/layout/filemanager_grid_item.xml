@@ -3,7 +3,8 @@
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="100dp"
-    android:background="@color/colorGrey">
+    android:background="@color/colorGrey"
+    android:id="@+id/layout">
 
 <TextView
         android:id="@+id/tv_filemanager_data"

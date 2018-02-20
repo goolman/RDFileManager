@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">RDFileManager</string>
     <string name="error_message">Oops something went wrong.</string>
+    <string name="refresh_button">Refresh</string>
+    <string name="action_settings">Settings</string>
+    <string name="delete_button">Delete</string>
 </resources>
