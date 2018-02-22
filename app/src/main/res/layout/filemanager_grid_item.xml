@@ -10,7 +10,7 @@
         android:id="@+id/tv_filemanager_data"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:textSize="22sp"
+        android:textSize="18sp"
         android:gravity="center"
         android:layout_margin="5sp"
         android:background="@color/colorWhite"/>

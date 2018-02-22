@@ -1,6 +1,8 @@
 package com.xdockalr.rdfilemanager;
 
 import android.Manifest;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.os.Build;
@@ -17,6 +19,8 @@ import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LayoutAnimationController;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -58,6 +62,9 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
         mRecycleView.setHasFixedSize(true);
         mFileManagerAdapter = new FileManagerAdapter(this);
         mRecycleView.setAdapter(mFileManagerAdapter);
+
+        runLayoutAnimation(mRecycleView);
+        checkStoragePermission();
         mActualPath = Environment.getExternalStorageDirectory().toString();
         loadPath(mActualPath);
     }
@@ -74,9 +81,12 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
 
         if (itemId == R.id.action_refresh) {
             loadPath(mActualPath);
+            return true;
         }
         else if (itemId == R.id.action_settings){
-
+            Intent startSettingsActivity = new Intent(this, SettingsActivity.class);
+            startActivity(startSettingsActivity);
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -105,7 +115,7 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
         mActualPath = path;
     }
 
-    private void showWeatherDataView() {
+    private void showDataView() {
         mRecycleView.setVisibility(View.VISIBLE);
         mErrorText.setVisibility(View.INVISIBLE);
     }
@@ -113,6 +123,16 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
     private void showErrorMessage() {
         mRecycleView.setVisibility(View.INVISIBLE);
         mErrorText.setVisibility(View.VISIBLE);
+    }
+
+    private void runLayoutAnimation(final RecyclerView recyclerView) {
+        final Context context = recyclerView.getContext();
+        final LayoutAnimationController controller =
+                AnimationUtils.loadLayoutAnimation(context, R.anim.layout_animation);
+
+        recyclerView.setLayoutAnimation(controller);
+        recyclerView.getAdapter().notifyDataSetChanged();
+        recyclerView.scheduleLayoutAnimation();
     }
 
     @Override
@@ -173,7 +193,8 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
     public void onLoadFinished(Loader<ArrayList<File>> loader, ArrayList<File> data) {
         mProgressBar.setVisibility(View.INVISIBLE);
         if (data != null) {
-            showWeatherDataView();
+            runLayoutAnimation(mRecycleView);
+            showDataView();
             mFileManagerAdapter.setFileManagerData(data);
         }
         else {

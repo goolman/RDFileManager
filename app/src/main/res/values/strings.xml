@@ -4,4 +4,8 @@
     <string name="refresh_button">Refresh</string>
     <string name="action_settings">Settings</string>
     <string name="delete_button">Delete</string>
+    <string name="pref_default_path_summary">Actual default folder:</string>
+    <string name="pref_default_path_folder">Default folder</string>
+    <string name="pref_default_path_key">defult_path</string>
+    <string name="pref_default_path_def_value">/storage/emulated/0</string>
 </resources>
