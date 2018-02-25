@@ -27,19 +27,23 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 
 public class MainActivity extends AppCompatActivity implements FileManagerAdapter.FileManagerAdapterOnClickHandler, LoaderManager.LoaderCallbacks<ArrayList<File>>{
+
+    private static final Integer INIT_HISTORY_PATH_LENGTH = 1;
+    private static final int FILEMANAGER_LOADER_ID = 0;
+    private static final String FILEMANAGER_LOADER_PATH = "LOADER_PATH";
+    private static final String FILEMANAGER_HISTORY_PATH_STACK = "HISTORY_PATH_STACK";
 
     private RecyclerView mRecycleView;
     private FileManagerAdapter mFileManagerAdapter;
     private TextView mErrorText;
     private ProgressBar mProgressBar;
-    private String mActualPath;
-
-    private static final int FILEMANAGER_LOADER_ID = 0;
-    private static final String FILEMANAGER_LOADER_PATH = "LOADER_PATH";
+    private Deque<String> mHistoryPathStack = new ArrayDeque<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,9 +68,21 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
         mRecycleView.setAdapter(mFileManagerAdapter);
 
         runLayoutAnimation(mRecycleView);
-        checkStoragePermission();
-        mActualPath = Environment.getExternalStorageDirectory().toString();
-        loadPath(mActualPath);
+        //checkStoragePermission();
+
+        if(savedInstanceState != null) {
+            mHistoryPathStack = (ArrayDeque<String>) savedInstanceState.getSerializable(FILEMANAGER_HISTORY_PATH_STACK);
+        }
+        else {
+            String initPath = Environment.getExternalStorageDirectory().toString();
+            mHistoryPathStack.addFirst(initPath);
+        }
+        loadPath(mHistoryPathStack.peekFirst());
+    }
+
+    protected void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putSerializable(FILEMANAGER_HISTORY_PATH_STACK, (ArrayDeque<String>) mHistoryPathStack);
     }
 
     @Override
@@ -80,7 +96,7 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
         int itemId = item.getItemId();
 
         if (itemId == R.id.action_refresh) {
-            loadPath(mActualPath);
+            loadPath(mHistoryPathStack.peekFirst());
             return true;
         }
         else if (itemId == R.id.action_settings){
@@ -89,6 +105,27 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackPressed() {
+        //  +
+
+        if (mHistoryPathStack.isEmpty()) {
+            super.onBackPressed();
+        }
+        else
+        {
+            if (mHistoryPathStack.size() == INIT_HISTORY_PATH_LENGTH){
+                finish();
+                return;
+            }
+            else {
+                mHistoryPathStack.removeFirst();
+                String histPath = mHistoryPathStack.peekFirst();
+                loadPath(histPath);
+            }
+        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -106,13 +143,23 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
     }
 
     private void loadPath(String path) {
-        int loaderId = FILEMANAGER_LOADER_ID;
+            int loaderId = FILEMANAGER_LOADER_ID;
         LoaderManager.LoaderCallbacks<ArrayList<File>> callback = MainActivity.this;
         Bundle bundleForLoader = new Bundle();
         bundleForLoader.putString(FILEMANAGER_LOADER_PATH, path);
         mFileManagerAdapter.setFileManagerData(null);
         getSupportLoaderManager().restartLoader(loaderId,bundleForLoader, this);
-        mActualPath = path;
+
+        if (mHistoryPathStack.peekFirst() != path)
+            mHistoryPathStack.addFirst(path);
+    }
+
+    public Deque<String> getHistoryPathStack() {
+        return mHistoryPathStack;
+    }
+
+    public void setHistoryPathStack(Deque<String> path) {
+        mHistoryPathStack = path;
     }
 
     private void showDataView() {
