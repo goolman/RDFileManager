@@ -1,18 +1,23 @@
 package com.xdockalr.rdfilemanager;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.annotation.RequiresApi;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
+import android.support.v4.content.FileProvider;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -27,23 +32,26 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
 
-public class MainActivity extends AppCompatActivity implements FileManagerAdapter.FileManagerAdapterOnClickHandler, LoaderManager.LoaderCallbacks<ArrayList<File>>{
+public class MainActivity extends AppCompatActivity implements
+        FileManagerAdapter.FileManagerAdapterOnClickHandler,
+        LoaderManager.LoaderCallbacks<ArrayList<File>>,
+        SharedPreferences.OnSharedPreferenceChangeListener{
 
-    private static final Integer INIT_HISTORY_PATH_LENGTH = 1;
     private static final int FILEMANAGER_LOADER_ID = 0;
     private static final String FILEMANAGER_LOADER_PATH = "LOADER_PATH";
-    private static final String FILEMANAGER_HISTORY_PATH_STACK = "HISTORY_PATH_STACK";
+    private static final String FILEMANAGER_ACTUAL_PATH = "ACTUAL_PATH";
+
+    protected static final String BASE_EXTERNAL_PATH = Environment.getExternalStorageDirectory().toString();
 
     private RecyclerView mRecycleView;
     private FileManagerAdapter mFileManagerAdapter;
     private TextView mErrorText;
     private ProgressBar mProgressBar;
-    private Deque<String> mHistoryPathStack = new ArrayDeque<>();
+
+    private static String mActualPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,21 +76,34 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
         mRecycleView.setAdapter(mFileManagerAdapter);
 
         runLayoutAnimation(mRecycleView);
-        //checkStoragePermission();
+
+        PreferenceManager.getDefaultSharedPreferences(this)
+                .registerOnSharedPreferenceChangeListener(this);
 
         if(savedInstanceState != null) {
-            mHistoryPathStack = (ArrayDeque<String>) savedInstanceState.getSerializable(FILEMANAGER_HISTORY_PATH_STACK);
+            mActualPath = savedInstanceState.getString(FILEMANAGER_ACTUAL_PATH);
         }
         else {
-            String initPath = Environment.getExternalStorageDirectory().toString();
-            mHistoryPathStack.addFirst(initPath);
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+            String prefDefaultPath = sharedPreferences.getString(getResources().getString(R.string.pref_default_path_key),null);
+            if (prefDefaultPath != null && (new File(prefDefaultPath).isDirectory())) {
+                mActualPath = prefDefaultPath;
+            }
+            else {
+                prefDefaultPath = Environment.getExternalStorageDirectory().toString();
+                mActualPath = prefDefaultPath;
+            }
         }
-        loadPath(mHistoryPathStack.peekFirst());
+        if (isWriteStoragePermissionGranted()) {
+             loadPath(mActualPath);
+        }
+        else
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
     }
 
     protected void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
-        savedInstanceState.putSerializable(FILEMANAGER_HISTORY_PATH_STACK, (ArrayDeque<String>) mHistoryPathStack);
+        savedInstanceState.putString(FILEMANAGER_ACTUAL_PATH, mActualPath);
     }
 
     @Override
@@ -96,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
         int itemId = item.getItemId();
 
         if (itemId == R.id.action_refresh) {
-            loadPath(mHistoryPathStack.peekFirst());
+            loadPath(mActualPath);
             return true;
         }
         else if (itemId == R.id.action_settings){
@@ -111,75 +132,14 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
     public void onBackPressed() {
         //  +
 
-        if (mHistoryPathStack.isEmpty()) {
+        if (mActualPath.equals(BASE_EXTERNAL_PATH)) {
             super.onBackPressed();
         }
-        else
-        {
-            if (mHistoryPathStack.size() == INIT_HISTORY_PATH_LENGTH){
-                finish();
-                return;
-            }
-            else {
-                mHistoryPathStack.removeFirst();
-                String histPath = mHistoryPathStack.peekFirst();
-                loadPath(histPath);
-            }
+        else {
+            int indexOfLastSlash = mActualPath.lastIndexOf("/");
+            String previousFolder = mActualPath.substring(0,indexOfLastSlash);
+            loadPath(previousFolder);
         }
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    private void checkStoragePermission() {
-        if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            if (shouldShowRequestPermissionRationale(
-                    Manifest.permission.READ_EXTERNAL_STORAGE)) {
-            }
-
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                    1 );
-        }
-    }
-
-    private void loadPath(String path) {
-            int loaderId = FILEMANAGER_LOADER_ID;
-        LoaderManager.LoaderCallbacks<ArrayList<File>> callback = MainActivity.this;
-        Bundle bundleForLoader = new Bundle();
-        bundleForLoader.putString(FILEMANAGER_LOADER_PATH, path);
-        mFileManagerAdapter.setFileManagerData(null);
-        getSupportLoaderManager().restartLoader(loaderId,bundleForLoader, this);
-
-        if (mHistoryPathStack.peekFirst() != path)
-            mHistoryPathStack.addFirst(path);
-    }
-
-    public Deque<String> getHistoryPathStack() {
-        return mHistoryPathStack;
-    }
-
-    public void setHistoryPathStack(Deque<String> path) {
-        mHistoryPathStack = path;
-    }
-
-    private void showDataView() {
-        mRecycleView.setVisibility(View.VISIBLE);
-        mErrorText.setVisibility(View.INVISIBLE);
-    }
-
-    private void showErrorMessage() {
-        mRecycleView.setVisibility(View.INVISIBLE);
-        mErrorText.setVisibility(View.VISIBLE);
-    }
-
-    private void runLayoutAnimation(final RecyclerView recyclerView) {
-        final Context context = recyclerView.getContext();
-        final LayoutAnimationController controller =
-                AnimationUtils.loadLayoutAnimation(context, R.anim.layout_animation);
-
-        recyclerView.setLayoutAnimation(controller);
-        recyclerView.getAdapter().notifyDataSetChanged();
-        recyclerView.scheduleLayoutAnimation();
     }
 
     @Override
@@ -265,4 +225,89 @@ public class MainActivity extends AppCompatActivity implements FileManagerAdapte
         Toast.makeText(this, "LongClick", Toast.LENGTH_SHORT).show();
     }
 
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (permissions != null && permissions.length > 0 && permissions[0].equals(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            if(grantResults[0]== PackageManager.PERMISSION_GRANTED){
+                loadPath(mActualPath);
+            }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        PreferenceManager.getDefaultSharedPreferences(this)
+                .unregisterOnSharedPreferenceChangeListener(this);
+    }
+
+    private void loadPath(String path) {
+        if (new File(path).isDirectory()) {
+            int loaderId = FILEMANAGER_LOADER_ID;
+            Bundle bundleForLoader = new Bundle();
+            bundleForLoader.putString(FILEMANAGER_LOADER_PATH, path);
+            mFileManagerAdapter.setFileManagerData(null);
+            getSupportLoaderManager().restartLoader(loaderId,bundleForLoader, this);
+            mActualPath = path;
+        }
+        else if (new File(path).isFile()){
+            String mimeType = MimeType.getTypeFromName(path);
+            Intent newIntent = new Intent(Intent.ACTION_VIEW);
+            newIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            File file = new File(String.valueOf(path));
+            Uri fileUri = FileProvider.getUriForFile (this, BuildConfig.APPLICATION_ID + ".provider", file);
+            newIntent.setDataAndType(fileUri, mimeType);
+
+            try {
+                startActivity(newIntent);
+            } catch (ActivityNotFoundException e) {
+                Toast.makeText(this, getResources().getString(R.string.file_open_error), Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void showDataView() {
+        mRecycleView.setVisibility(View.VISIBLE);
+        mErrorText.setVisibility(View.INVISIBLE);
+    }
+
+    private void showErrorMessage() {
+        mRecycleView.setVisibility(View.INVISIBLE);
+        mErrorText.setVisibility(View.VISIBLE);
+    }
+
+    private void runLayoutAnimation(final RecyclerView recyclerView) {
+        final Context context = recyclerView.getContext();
+        final LayoutAnimationController controller =
+                AnimationUtils.loadLayoutAnimation(context, R.anim.layout_animation);
+
+        recyclerView.setLayoutAnimation(controller);
+        recyclerView.getAdapter().notifyDataSetChanged();
+        recyclerView.scheduleLayoutAnimation();
+    }
+
+    public  boolean isWriteStoragePermissionGranted() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, getResources().getString(R.string.permission_granted), Toast.LENGTH_LONG).show();
+                return true;
+            } else {
+                Toast.makeText(this, getResources().getString(R.string.permission_revoked), Toast.LENGTH_LONG).show();
+                return false;
+            }
+        }
+        else {
+            Toast.makeText(this, getResources().getString(R.string.permission_granted), Toast.LENGTH_LONG).show();
+            return true;
+        }
+    }
 }

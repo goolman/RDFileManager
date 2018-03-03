@@ -6,6 +6,10 @@
     <string name="delete_button">Delete</string>
     <string name="pref_default_path_summary">Actual default folder:</string>
     <string name="pref_default_path_folder">Default folder</string>
-    <string name="pref_default_path_key">defult_path</string>
+    <string name="pref_default_path_key">DEFAULT_PATH</string>
     <string name="pref_default_path_def_value">/storage/emulated/0</string>
+    <string name="permission_granted">Permission is granted.</string>
+    <string name="permission_revoked">Permission is revoked.</string>
+    <string name="file_open_error">File can not be opened.</string>
+
 </resources>

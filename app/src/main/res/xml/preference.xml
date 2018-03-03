@@ -4,7 +4,8 @@
         android:defaultValue="@string/pref_default_path_def_value"
         android:key="@string/pref_default_path_key"
         android:selectAllOnFocus="true"
-        android:singleLine="true"
-        android:title="@string/pref_default_path_folder"
-        android:summary="@string/pref_default_path_summary"/>
+        android:singleLine="false"
+        android:summary="@string/pref_default_path_summary"
+        android:title="@string/pref_default_path_folder" />
+
 </PreferenceScreen>
