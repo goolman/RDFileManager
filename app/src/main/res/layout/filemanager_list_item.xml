@@ -1,16 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:paddingHorizontal="4sp"
+    android:layout_marginLeft="4sp"
+    android:layout_marginRight="4sp"
     android:id="@+id/layout">
 
-    <TextView
-        android:id="@+id/tv_filemanager_data"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:padding="16dp"
-        android:layout_margin="5sp"
-        android:background="@color/colorWhite"/>
-</LinearLayout>
+        <ImageView
+            android:id="@+id/iv_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_alignBottom="@+id/tv_filemanager_data"
+            android:layout_alignTop="@+id/tv_filemanager_data"
+            android:background="@color/colorWhite"
+            android:paddingLeft="2sp"
+            android:src="@drawable/ic_folder" />
+
+        <TextView
+            android:id="@+id/tv_filemanager_data"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5sp"
+            android:layout_marginTop="5sp"
+            android:layout_toEndOf="@+id/iv_icon"
+            android:background="@color/colorWhite"
+            android:padding="16dp"
+            android:textSize="18sp" />
+</RelativeLayout>

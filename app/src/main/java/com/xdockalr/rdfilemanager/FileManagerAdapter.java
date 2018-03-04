@@ -20,10 +20,12 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.FileManagerAdapterViewHolder> {
 
@@ -154,10 +156,12 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
     public class FileManagerAdapterViewHolder extends RecyclerView.ViewHolder implements OnClickListener, OnLongClickListener {
 
         final TextView mFileManagerTextView;
+        final ImageView mFileManagerImageView;
 
         FileManagerAdapterViewHolder(View itemView) {
             super(itemView);
             mFileManagerTextView = itemView.findViewById(R.id.tv_filemanager_data);
+            mFileManagerImageView = itemView.findViewById(R.id.iv_icon);
             itemView.setOnClickListener(this);
             itemView.setOnLongClickListener(this);
         }
@@ -192,12 +196,18 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
 
         void updateItem(String itemName) {
             mFileManagerTextView.setText(itemName);
-            if (mMultiSelect && (mSelectedItemsArray.contains(MainActivity.mActualPath + File.separator + itemName ))) {
-                    mFileManagerTextView.setBackgroundColor(Color.LTGRAY);
-                } else {
-                    mFileManagerTextView.setBackgroundColor(Color.WHITE);
-                }
+            if (new File(MainActivity.mActualPath + File.separator + itemName).isDirectory()) {
+                mFileManagerImageView.setImageDrawable(mContext.getResources().getDrawable(R.drawable.ic_folder));
             }
+            else if (!(new File(MainActivity.mActualPath + File.separator +itemName).isDirectory())) {
+                mFileManagerImageView.setImageDrawable(mContext.getResources().getDrawable(R.drawable.ic_file));
+            }
+            if (mMultiSelect && (mSelectedItemsArray.contains(MainActivity.mActualPath + File.separator + itemName ))) {
+                mFileManagerTextView.setBackgroundColor(Color.LTGRAY);
+            } else {
+                mFileManagerTextView.setBackgroundColor(Color.WHITE);
+            }
+        }
 
         void selectItem(File item) {
             if (mMultiSelect) {

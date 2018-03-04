@@ -34,6 +34,9 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements
         FileManagerAdapter.FileManagerAdapterOnClickHandler,
@@ -206,12 +209,17 @@ public class MainActivity extends AppCompatActivity implements
         if (data != null) {
             runLayoutAnimation(mRecycleView);
             showDataView();
+
+            Collections.sort(data, new SortFileName());
+            Collections.sort(data, new SortFolder());
+
             mFileManagerAdapter.setFileManagerData(data);
         }
         else {
             showErrorMessage();
         }
     }
+
 
     @Override
     public void onLoaderReset(Loader<ArrayList<File>> loader) {
@@ -330,5 +338,25 @@ public class MainActivity extends AppCompatActivity implements
             return true;
         }
     }
+
+    public class SortFileName implements Comparator<File> {
+        @Override
+        public int compare(File file1, File file2) {
+            return file1.getName().compareTo(file2.getName());
+        }
+    }
+
+    public class SortFolder implements Comparator<File> {
+        @Override
+        public int compare(File file1, File file2) {
+            if (file1.isDirectory() == file2.isDirectory())
+                return 0;
+            else if (file1.isDirectory() && !file2.isDirectory())
+                return -1;
+            else
+                return 1;
+        }
+    }
+
 
 }
