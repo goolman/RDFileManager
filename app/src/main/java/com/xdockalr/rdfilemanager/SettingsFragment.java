@@ -26,7 +26,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                     return true;
                 }
                      else{
-                    Toast.makeText(getContext(), "This path is not correct \nERROR: " + newValue, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "This path is not correct \n" + newValue, Toast.LENGTH_SHORT).show();
                     return false;
                 }
             }

@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final int FILEMANAGER_LOADER_ID = 0;
     private static final String FILEMANAGER_LOADER_PATH = "LOADER_PATH";
     private static final String FILEMANAGER_ACTUAL_PATH = "ACTUAL_PATH";
+    private static final String FILEMANAGER_SELECTED_ITEMS = "SELECTED_ITEMS";
 
     protected static final String BASE_EXTERNAL_PATH = Environment.getExternalStorageDirectory().toString();
 
@@ -51,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements
     private TextView mErrorText;
     private ProgressBar mProgressBar;
 
-    private static String mActualPath;
+    public static String mActualPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         mRecycleView.setHasFixedSize(true);
-        mFileManagerAdapter = new FileManagerAdapter(this);
+        mFileManagerAdapter = new FileManagerAdapter(this, this);
         mRecycleView.setAdapter(mFileManagerAdapter);
 
         runLayoutAnimation(mRecycleView);
@@ -82,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements
 
         if(savedInstanceState != null) {
             mActualPath = savedInstanceState.getString(FILEMANAGER_ACTUAL_PATH);
+            mFileManagerAdapter.setSelectedItemsArray(savedInstanceState.getStringArrayList(FILEMANAGER_SELECTED_ITEMS));
         }
         else {
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
@@ -90,20 +92,24 @@ public class MainActivity extends AppCompatActivity implements
                 mActualPath = prefDefaultPath;
             }
             else {
-                prefDefaultPath = Environment.getExternalStorageDirectory().toString();
+                prefDefaultPath = BASE_EXTERNAL_PATH;
                 mActualPath = prefDefaultPath;
             }
         }
-        if (isWriteStoragePermissionGranted()) {
+
+        if (isWriteExtStoragePermissionGranted()) {
              loadPath(mActualPath);
         }
-        else
+        else {
+            showErrorMessage();
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
+        }
     }
 
     protected void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
         savedInstanceState.putString(FILEMANAGER_ACTUAL_PATH, mActualPath);
+        savedInstanceState.putStringArrayList(FILEMANAGER_SELECTED_ITEMS, mFileManagerAdapter.getSelectedItemsArray());
     }
 
     @Override
@@ -130,13 +136,11 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onBackPressed() {
-        //  +
-
-        if (mActualPath.equals(BASE_EXTERNAL_PATH)) {
+        if ((mActualPath.equals(BASE_EXTERNAL_PATH)) || (mErrorText.getVisibility() == View.VISIBLE)){
             super.onBackPressed();
         }
         else {
-            int indexOfLastSlash = mActualPath.lastIndexOf("/");
+            int indexOfLastSlash = mActualPath.lastIndexOf(File.separator);
             String previousFolder = mActualPath.substring(0,indexOfLastSlash);
             loadPath(previousFolder);
         }
@@ -216,13 +220,12 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onClick(String actualItemPath) {
-        Toast.makeText(this, actualItemPath, Toast.LENGTH_SHORT).show();
         loadPath(actualItemPath);
     }
 
     @Override
     public void onLongClick(String itemName) {
-        Toast.makeText(this, "LongClick", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "LongClick", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -234,7 +237,12 @@ public class MainActivity extends AppCompatActivity implements
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (permissions != null && permissions.length > 0 && permissions[0].equals(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+        if (permissions != null && permissions.length > 0 && permissions[0].equals(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+            if(grantResults[0]== PackageManager.PERMISSION_GRANTED){
+                loadPath(mActualPath);
+            }
+        }
+        else if (permissions != null && permissions.length > 0 && permissions[0].equals(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             if(grantResults[0]== PackageManager.PERMISSION_GRANTED){
                 loadPath(mActualPath);
             }
@@ -251,11 +259,10 @@ public class MainActivity extends AppCompatActivity implements
 
     private void loadPath(String path) {
         if (new File(path).isDirectory()) {
-            int loaderId = FILEMANAGER_LOADER_ID;
             Bundle bundleForLoader = new Bundle();
             bundleForLoader.putString(FILEMANAGER_LOADER_PATH, path);
             mFileManagerAdapter.setFileManagerData(null);
-            getSupportLoaderManager().restartLoader(loaderId,bundleForLoader, this);
+            getSupportLoaderManager().restartLoader(FILEMANAGER_LOADER_ID, bundleForLoader, this);
             mActualPath = path;
         }
         else if (new File(path).isFile()){
@@ -294,20 +301,34 @@ public class MainActivity extends AppCompatActivity implements
         recyclerView.scheduleLayoutAnimation();
     }
 
-    public  boolean isWriteStoragePermissionGranted() {
+    public  boolean isReadExtStoragePermissionGranted() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, getResources().getString(R.string.permission_granted), Toast.LENGTH_LONG).show();
                 return true;
             } else {
-                Toast.makeText(this, getResources().getString(R.string.permission_revoked), Toast.LENGTH_LONG).show();
+                //Toast.makeText(this, getResources().getString(R.string.permission_revoked), Toast.LENGTH_LONG).show();
                 return false;
             }
         }
         else {
-            Toast.makeText(this, getResources().getString(R.string.permission_granted), Toast.LENGTH_LONG).show();
             return true;
         }
     }
+
+    public boolean isWriteExtStoragePermissionGranted() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                return true;
+            } else {
+                //Toast.makeText(this, getResources().getString(R.string.permission_revoked), Toast.LENGTH_LONG).show();
+                return false;
+            }
+        }
+        else {
+            return true;
+        }
+    }
+
 }

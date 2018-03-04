@@ -1,8 +1,15 @@
 package com.xdockalr.rdfilemanager;
 
+import android.Manifest;
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.net.Uri;
+import android.provider.MediaStore;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.RecyclerView;
@@ -20,10 +27,12 @@ import java.util.ArrayList;
 
 public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.FileManagerAdapterViewHolder> {
 
+    private Context mContext;
     private ArrayList<File> mFileManagerListData = new ArrayList<>();
     private final FileManagerAdapterOnClickHandler mClickHandler;
     private boolean mMultiSelect = false;
-    private ArrayList<File> mSelectedItems = new ArrayList<>();
+    private ArrayList<String> mSelectedItemsArray = new ArrayList<>();
+    private ActionMode mActionMode;
 
     private ActionMode.Callback actionModeCallbacks = new ActionMode.Callback() {
         @Override
@@ -39,25 +48,53 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
         }
 
         @Override
-        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-            for (File intItem : mSelectedItems) {
-                mFileManagerListData.remove(intItem);
+        public boolean onActionItemClicked(final ActionMode actionMode, MenuItem item) {
+
+            String itemId = item.toString();
+            if (itemId.equals(item.toString())) {
+                if(((MainActivity) mContext).isWriteExtStoragePermissionGranted()) {
+                    new AlertDialog.Builder(mContext)
+                    .setTitle(R.string.delete_button)
+                    .setMessage(R.string.delete_alert_text)
+                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            for (String itemName : mSelectedItemsArray) {
+                                File actualFile = new File(itemName);
+                                mFileManagerListData.remove(actualFile);
+                                boolean x = deleteMain(mContext,actualFile);
+                            }
+                            actionMode.finish();
+                        }
+                    })
+                    .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+
+                        }
+                    })
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show();
+
+                }
+                else {
+                    ActivityCompat.requestPermissions(((MainActivity) mContext), new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
+                }
+                return true;
             }
-            mode.finish();
             return true;
         }
 
         @Override
         public void onDestroyActionMode(ActionMode mode) {
             mMultiSelect = false;
-            mSelectedItems.clear();
+            mSelectedItemsArray.clear();
             notifyDataSetChanged();
         }
     };
 
-    public FileManagerAdapter(FileManagerAdapterOnClickHandler clickHandler) {
+    FileManagerAdapter(FileManagerAdapterOnClickHandler clickHandler, Context context) {
 
         mClickHandler = clickHandler;
+        mContext = context;
     }
 
     public interface FileManagerAdapterOnClickHandler {
@@ -97,16 +134,28 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
             return mFileManagerListData.size();
     }
 
-    public void setFileManagerData(ArrayList<File> fileManagerListdata) {
+    void setFileManagerData(ArrayList<File> fileManagerListdata) {
         mFileManagerListData = fileManagerListdata;
         notifyDataSetChanged();
     }
 
+    ArrayList<String> getSelectedItemsArray() {
+        return mSelectedItemsArray;
+    }
+
+    void setSelectedItemsArray(ArrayList<String> selectedItems) {
+        mSelectedItemsArray = selectedItems;
+            if (selectedItems.size() > 0) {
+                mMultiSelect = true;
+                mActionMode = ((AppCompatActivity) mContext).startSupportActionMode(actionModeCallbacks);
+        }
+    }
+
     public class FileManagerAdapterViewHolder extends RecyclerView.ViewHolder implements OnClickListener, OnLongClickListener {
 
-        public final TextView mFileManagerTextView;
+        final TextView mFileManagerTextView;
 
-        public FileManagerAdapterViewHolder(View itemView) {
+        FileManagerAdapterViewHolder(View itemView) {
             super(itemView);
             mFileManagerTextView = itemView.findViewById(R.id.tv_filemanager_data);
             itemView.setOnClickListener(this);
@@ -132,32 +181,68 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
             String actualItemPath = mFileManagerListData.get(position).toString();
             mClickHandler.onLongClick(actualItemPath);
             if (!mMultiSelect) {
-                ((AppCompatActivity) v.getContext()).startSupportActionMode(actionModeCallbacks);
+                mActionMode = ((AppCompatActivity) mContext).startSupportActionMode(actionModeCallbacks);
+            }
+            else if ((mSelectedItemsArray.size() == 1) && (mSelectedItemsArray.get(0).equals(actualItemPath))){
+                mActionMode.finish();
             }
             selectItem(mFileManagerListData.get(position));
             return true;
         }
 
-        public void updateItem(String itemName) {
+        void updateItem(String itemName) {
             mFileManagerTextView.setText(itemName);
-            if (!mMultiSelect) {
-                    mFileManagerTextView.setBackgroundColor(Color.WHITE);
-                } else {
+            if (mMultiSelect && (mSelectedItemsArray.contains(MainActivity.mActualPath + File.separator + itemName ))) {
                     mFileManagerTextView.setBackgroundColor(Color.LTGRAY);
+                } else {
+                    mFileManagerTextView.setBackgroundColor(Color.WHITE);
                 }
             }
 
         void selectItem(File item) {
             if (mMultiSelect) {
-                if (mSelectedItems.contains(item)) {
-                    mSelectedItems.remove(item);
+                if (mSelectedItemsArray.contains(item.toString())) {
+                    mSelectedItemsArray.remove(item.toString());
                     mFileManagerTextView.setBackgroundColor(Color.WHITE);
                 } else {
-                    mSelectedItems.add(item);
+                    mSelectedItemsArray.add(item.toString());
                     mFileManagerTextView.setBackgroundColor(Color.LTGRAY);
                 }
             }
         }
+    }
 
+    private static boolean deleteItem(final Context context, final File file) {
+        final String where = MediaStore.MediaColumns.DATA + "=?";
+        final String[] selectionArgs = new String[] {
+                file.getAbsolutePath()
+        };
+        final ContentResolver contentResolver = context.getContentResolver();
+        final Uri filesUri = MediaStore.Files.getContentUri("external");
+
+        contentResolver.delete(filesUri, where, selectionArgs);
+
+        if (file.exists() && file.isDirectory()) {
+            file.delete();
+        }
+        return !file.exists();
+    }
+
+    private static boolean deleteMain(final Context context, final File path) {
+        if( path.exists() ) {
+            File[] files = path.listFiles();
+            if (files == null) {
+                return deleteItem(context, path);
+            }
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    deleteMain(context, file);
+                } else {
+                    for (File delFile : files)
+                        deleteItem(context, delFile);
+                }
+            }
+        }
+        return deleteItem(context, path);
     }
 }

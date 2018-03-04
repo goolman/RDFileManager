@@ -11,5 +11,6 @@
     <string name="permission_granted">Permission is granted.</string>
     <string name="permission_revoked">Permission is revoked.</string>
     <string name="file_open_error">File can not be opened.</string>
+    <string name="delete_alert_text">Are you sure you want to delete selected?</string>
 
 </resources>

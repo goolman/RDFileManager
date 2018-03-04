@@ -4,9 +4,9 @@ import android.webkit.MimeTypeMap;
 
 import java.util.Locale;
 
-public class MimeType {
+class MimeType {
 
-    public static String getTypeFromName(String name) {
+    static String getTypeFromName(String name) {
         String type = null;
         int dotPosition = name.lastIndexOf('.');
         if (dotPosition >= 0) {
