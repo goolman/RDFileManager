@@ -9,24 +9,26 @@ import android.widget.Toast;
 
 import java.io.File;
 
+import static com.xdockalr.rdfilemanager.MainActivity.getmActualPath;
+
 public class SettingsFragment extends PreferenceFragmentCompat implements
         SharedPreferences.OnSharedPreferenceChangeListener{
-
-    private EditTextPreference mEditTextPref;
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.preference);
-        mEditTextPref = (EditTextPreference) getPreferenceScreen().findPreference("DEFAULT_PATH");
+        EditTextPreference mEditTextPref = (EditTextPreference) getPreferenceManager().findPreference("DEFAULT_PATH");
+        mEditTextPref.setSummary(mEditTextPref.getText());
 
         mEditTextPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 if (newValue != null && (new File((String) newValue).isDirectory())) {
+                    preference.setSummary(newValue.toString());
                     return true;
                 }
                      else{
-                    Toast.makeText(getContext(), "This path is not correct \n" + newValue, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), getString(R.string.incorrect_path_toast) + newValue, Toast.LENGTH_LONG).show();
                     return false;
                 }
             }
@@ -39,6 +41,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
                 return true;
             }
         });
+
+        mEditTextPref.setDialogMessage(getString(R.string.curernt_directory_dialog) + getmActualPath());
     }
 
     @Override
@@ -57,9 +61,5 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (sharedPreferences != null && (new File(sharedPreferences.toString()).isDirectory())) {
-
-        }
-
     }
 }

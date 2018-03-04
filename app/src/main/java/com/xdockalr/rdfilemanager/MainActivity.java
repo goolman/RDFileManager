@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements
         FileManagerAdapter.FileManagerAdapterOnClickHandler,
@@ -53,9 +52,14 @@ public class MainActivity extends AppCompatActivity implements
     private RecyclerView mRecycleView;
     private FileManagerAdapter mFileManagerAdapter;
     private TextView mErrorText;
+    private TextView mEmptyFolder;
     private ProgressBar mProgressBar;
 
-    public static String mActualPath;
+    private static String mActualPath;
+
+    public static String getmActualPath() {
+        return mActualPath;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements
 
         mRecycleView = findViewById(R.id.recyclerview_main);
         mErrorText = findViewById(R.id.tv_error_message_display);
+        mEmptyFolder = findViewById(R.id.tv_empty_folder);
         mProgressBar = findViewById(R.id.pb_loading_indicator);
 
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
@@ -214,6 +219,8 @@ public class MainActivity extends AppCompatActivity implements
             Collections.sort(data, new SortFolder());
 
             mFileManagerAdapter.setFileManagerData(data);
+            if (data.isEmpty())
+                showEmptyFolderMessage();
         }
         else {
             showErrorMessage();
@@ -245,12 +252,12 @@ public class MainActivity extends AppCompatActivity implements
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (permissions != null && permissions.length > 0 && permissions[0].equals(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+        if (permissions.length > 0 && permissions[0].equals(Manifest.permission.READ_EXTERNAL_STORAGE)) {
             if(grantResults[0]== PackageManager.PERMISSION_GRANTED){
                 loadPath(mActualPath);
             }
         }
-        else if (permissions != null && permissions.length > 0 && permissions[0].equals(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+        else if (permissions.length > 0 && permissions[0].equals(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             if(grantResults[0]== PackageManager.PERMISSION_GRANTED){
                 loadPath(mActualPath);
             }
@@ -292,11 +299,20 @@ public class MainActivity extends AppCompatActivity implements
     private void showDataView() {
         mRecycleView.setVisibility(View.VISIBLE);
         mErrorText.setVisibility(View.INVISIBLE);
+        mEmptyFolder.setVisibility(View.INVISIBLE);
     }
 
     private void showErrorMessage() {
         mRecycleView.setVisibility(View.INVISIBLE);
         mErrorText.setVisibility(View.VISIBLE);
+        mEmptyFolder.setVisibility(View.INVISIBLE);
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
+    }
+
+    private void showEmptyFolderMessage() {
+        mRecycleView.setVisibility(View.INVISIBLE);
+        mErrorText.setVisibility(View.INVISIBLE);
+        mEmptyFolder.setVisibility(View.VISIBLE);
     }
 
     private void runLayoutAnimation(final RecyclerView recyclerView) {
@@ -309,30 +325,11 @@ public class MainActivity extends AppCompatActivity implements
         recyclerView.scheduleLayoutAnimation();
     }
 
-    public  boolean isReadExtStoragePermissionGranted() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_GRANTED) {
-                return true;
-            } else {
-                //Toast.makeText(this, getResources().getString(R.string.permission_revoked), Toast.LENGTH_LONG).show();
-                return false;
-            }
-        }
-        else {
-            return true;
-        }
-    }
-
     public boolean isWriteExtStoragePermissionGranted() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_GRANTED) {
-                return true;
-            } else {
-                //Toast.makeText(this, getResources().getString(R.string.permission_revoked), Toast.LENGTH_LONG).show();
-                return false;
-            }
+            //Toast.makeText(this, getResources().getString(R.string.permission_revoked), Toast.LENGTH_LONG).show();
+            return checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED;
         }
         else {
             return true;

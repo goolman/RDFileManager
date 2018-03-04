@@ -25,7 +25,8 @@ import android.widget.TextView;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
+
+import static com.xdockalr.rdfilemanager.MainActivity.getmActualPath;
 
 public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.FileManagerAdapterViewHolder> {
 
@@ -196,13 +197,14 @@ public class FileManagerAdapter extends RecyclerView.Adapter<FileManagerAdapter.
 
         void updateItem(String itemName) {
             mFileManagerTextView.setText(itemName);
-            if (new File(MainActivity.mActualPath + File.separator + itemName).isDirectory()) {
+            String fullItemPath = getmActualPath() + File.separator + itemName;
+            if (new File(fullItemPath).isDirectory()) {
                 mFileManagerImageView.setImageDrawable(mContext.getResources().getDrawable(R.drawable.ic_folder));
             }
-            else if (!(new File(MainActivity.mActualPath + File.separator +itemName).isDirectory())) {
+            else if (!(new File(fullItemPath).isDirectory())) {
                 mFileManagerImageView.setImageDrawable(mContext.getResources().getDrawable(R.drawable.ic_file));
             }
-            if (mMultiSelect && (mSelectedItemsArray.contains(MainActivity.mActualPath + File.separator + itemName ))) {
+            if (mMultiSelect && (mSelectedItemsArray.contains(fullItemPath ))) {
                 mFileManagerTextView.setBackgroundColor(Color.LTGRAY);
             } else {
                 mFileManagerTextView.setBackgroundColor(Color.WHITE);

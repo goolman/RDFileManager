@@ -7,7 +7,7 @@
         android:title="@string/refresh_button"
         android:icon="@drawable/ic_refresh"
         android:orderInCategory="1"
-        app:showAsAction="never" />
+        app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/action_settings"
