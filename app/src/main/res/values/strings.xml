@@ -12,8 +12,8 @@
     <string name="permission_revoked">Permission is revoked.</string>
     <string name="file_open_error">File can not be opened.</string>
     <string name="delete_alert_text">Are you sure you want to delete selected?</string>
-    <string name="curernt_directory_dialog">Current directory:\n</string>
-    <string name="incorrect_path_toast">Incorrect directory path:\n</string>
-    <string name="empty_directory">Folder is empty.</string>
+    <string name="current_folder_dialog">Current folder:\n</string>
+    <string name="incorrect_path_toast">Incorrect folder path:\n</string>
+    <string name="empty_folder">Folder is empty.</string>
 
 </resources>

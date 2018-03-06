@@ -17,7 +17,7 @@
         android:layout_height="wrap_content"
         android:padding="16dp"
         android:text="@string/error_message"
-        android:textSize="20sp"
+        android:textSize="18sp"
         android:textColor="@color/colorWhite"
         android:visibility="invisible" />
     <TextView
@@ -25,8 +25,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="16dp"
-        android:text="@string/empty_directory"
-        android:textSize="20sp"
+        android:text="@string/empty_folder"
+        android:textSize="18sp"
         android:textColor="@color/colorWhite"
         android:visibility="invisible" />
 

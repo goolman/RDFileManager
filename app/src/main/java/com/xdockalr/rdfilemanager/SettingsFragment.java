@@ -42,7 +42,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
             }
         });
 
-        mEditTextPref.setDialogMessage(getString(R.string.curernt_directory_dialog) + getmActualPath());
+        mEditTextPref.setDialogMessage(getString(R.string.current_folder_dialog) + getmActualPath());
     }
 
     @Override
