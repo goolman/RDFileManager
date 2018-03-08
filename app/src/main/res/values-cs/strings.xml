@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_message">Něco se pokazilo.</string>
+    <string name="refresh_button">Obnovit</string>
+    <string name="action_settings">Nastavení</string>
+    <string name="delete_button">Odstranit</string>
+    <string name="pref_default_path_summary">Aktuální defaultní složka:</string>
+    <string name="pref_default_path_folder">Defaultní složka</string>
+    <string name="file_open_error">Soubor nelze otevřít.</string>
+    <string name="delete_alert_text">Opravdu chcete odstranit vybrané položky?</string>
+    <string name="current_folder_dialog">Aktuální složka:\n</string>
+    <string name="incorrect_path_toast">Neexistující složka:\n</string>
+    <string name="empty_folder">Prázdná složka.</string>
+</resources>
